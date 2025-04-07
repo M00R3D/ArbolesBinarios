@@ -1,3 +1,5 @@
+// Programa de operaciones con arboles binarios, por Alumno Job Moore Garay, IDS Estructura de Datos II
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -9,10 +11,51 @@ struct Nodo {
     string valor;
     Nodo* izquierda;
     Nodo* derecha;
-    Nodo(string v) : valor(v), izquierda(nullptr), derecha(nullptr) {}
+    int altura; // nuevo campo
+
+    Nodo(string v) : valor(v), izquierda(nullptr), derecha(nullptr), altura(1) {}
 };
 
-// Funcion para insertar en el arbol binario
+// Funciones auxiliares para AVL
+int altura(Nodo* nodo) {
+    return nodo ? nodo->altura : 0;
+}
+
+int max(int a, int b) {
+    return (a > b) ? a : b;
+}
+
+int obtenerBalance(Nodo* nodo) {
+    return nodo ? altura(nodo->izquierda) - altura(nodo->derecha) : 0;
+}
+
+Nodo* rotarDerecha(Nodo* y) {
+    Nodo* x = y->izquierda;
+    Nodo* T2 = x->derecha;
+
+    x->derecha = y;
+    y->izquierda = T2;
+
+    y->altura = max(altura(y->izquierda), altura(y->derecha)) + 1;
+    x->altura = max(altura(x->izquierda), altura(x->derecha)) + 1;
+
+    return x;
+}
+
+Nodo* rotarIzquierda(Nodo* x) {
+    Nodo* y = x->derecha;
+    Nodo* T2 = y->izquierda;
+
+    y->izquierda = x;
+    x->derecha = T2;
+
+    x->altura = max(altura(x->izquierda), altura(x->derecha)) + 1;
+    y->altura = max(altura(y->izquierda), altura(y->derecha)) + 1;
+
+    return y;
+}
+
+// Funcion para insertar en el arbol binario (sin balanceo)
 Nodo* insertar(Nodo* raiz, string valor) {
     if (!raiz) return new Nodo(valor);
     if (valor < raiz->valor)
@@ -22,10 +65,61 @@ Nodo* insertar(Nodo* raiz, string valor) {
     return raiz;
 }
 
+// Insercion con balanceo AVL
+Nodo* insertarAVL(Nodo* nodo, string valor) {
+    if (!nodo) return new Nodo(valor);
+
+    if (valor < nodo->valor)
+        nodo->izquierda = insertarAVL(nodo->izquierda, valor);
+    else if (valor > nodo->valor)
+        nodo->derecha = insertarAVL(nodo->derecha, valor);
+    else
+        return nodo;
+
+    nodo->altura = 1 + max(altura(nodo->izquierda), altura(nodo->derecha));
+
+    int balance = obtenerBalance(nodo);
+
+    if (balance > 1 && valor < nodo->izquierda->valor)
+        return rotarDerecha(nodo);
+
+    if (balance < -1 && valor > nodo->derecha->valor)
+        return rotarIzquierda(nodo);
+
+    if (balance > 1 && valor > nodo->izquierda->valor) {
+        nodo->izquierda = rotarIzquierda(nodo->izquierda);
+        return rotarDerecha(nodo);
+    }
+
+    if (balance < -1 && valor < nodo->derecha->valor) {
+        nodo->derecha = rotarDerecha(nodo->derecha);
+        return rotarIzquierda(nodo);
+    }
+
+    return nodo;
+}
+
+// Reinsertar todos los nodos usando AVL
+void recolectarNodos(Nodo* raiz, vector<string>& nodos) {
+    if (!raiz) return;
+    recolectarNodos(raiz->izquierda, nodos);
+    nodos.push_back(raiz->valor);
+    recolectarNodos(raiz->derecha, nodos);
+}
+
+Nodo* balancearAVL(Nodo* raiz) {
+    vector<string> nodos;
+    recolectarNodos(raiz, nodos);
+    Nodo* nuevoArbol = nullptr;
+    for (const string& val : nodos)
+        nuevoArbol = insertarAVL(nuevoArbol, val);
+    return nuevoArbol;
+}
+
 // Funcion para buscar y eliminar un nodo en el arbol
 Nodo* eliminar(Nodo* raiz, string valor) {
     if (!raiz) return raiz;
-    
+
     if (valor < raiz->valor)
         raiz->izquierda = eliminar(raiz->izquierda, valor);
     else if (valor > raiz->valor)
@@ -41,18 +135,18 @@ Nodo* eliminar(Nodo* raiz, string valor) {
             delete raiz;
             return temp;
         }
-        
+
         Nodo* temp = raiz->derecha;
         while (temp && temp->izquierda)
             temp = temp->izquierda;
-        
+
         raiz->valor = temp->valor;
         raiz->derecha = eliminar(raiz->derecha, temp->valor);
     }
     return raiz;
 }
 
-// Recorrido inorden para mostrar el arbol ordenado
+// Recorridos
 void inorden(Nodo* raiz) {
     if (!raiz) return;
     inorden(raiz->izquierda);
@@ -60,7 +154,6 @@ void inorden(Nodo* raiz) {
     inorden(raiz->derecha);
 }
 
-// Recorrido preorden para mostrar el arbol
 void preorden(Nodo* raiz) {
     if (!raiz) return;
     cout << raiz->valor << " ";
@@ -68,7 +161,6 @@ void preorden(Nodo* raiz) {
     preorden(raiz->derecha);
 }
 
-// Recorrido postorden para mostrar el arbol
 void postorden(Nodo* raiz) {
     if (!raiz) return;
     postorden(raiz->izquierda);
@@ -76,16 +168,20 @@ void postorden(Nodo* raiz) {
     cout << raiz->valor << " ";
 }
 
-// Funcion para imprimir el arbol en formato de estructura visual
-void imprimirArbol(Nodo* raiz, int espacio = 0, int separacion = 6) {
+void imprimirArbol(Nodo* raiz, int espacio = 0, int separacion = 6, int nivel = 0) {
     if (!raiz) return;
     espacio += separacion;
-    imprimirArbol(raiz->derecha, espacio);
-    cout << string(espacio, ' ') << raiz->valor << endl;
-    imprimirArbol(raiz->izquierda, espacio);
+
+    // Mostrar lado derecho
+    imprimirArbol(raiz->derecha, espacio, separacion, nivel + 1);
+
+    // Imprimir el nodo actual con nivel
+    cout << string(espacio, ' ') << raiz->valor << " (Nivel " << nivel << ")" << endl;
+
+    // Mostrar lado izquierdo
+    imprimirArbol(raiz->izquierda, espacio, separacion, nivel + 1);
 }
 
-// Funcion para imprimir los niveles del arbol
 void imprimirPorNiveles(Nodo* raiz, int nivel = 0) {
     if (!raiz) return;
     cout << string(nivel * 3, ' ') << raiz->valor << " (Nivel " << nivel << ")" << endl;
@@ -96,8 +192,8 @@ void imprimirPorNiveles(Nodo* raiz, int nivel = 0) {
 int main() {
     vector<string> elementos;
     Nodo* raiz = nullptr;
+    cout << "Programa de operaciones con arboles binarios, por Alumno Job Moore Garay, IDS Estructura de Datos II\n" << endl;
 
-    // Ingreso de elementos
     cout << "Ingrese 10 caracteres o numeros enteros separados por espacio: ";
     for (int i = 0; i < 10; i++) {
         string entrada;
@@ -105,14 +201,12 @@ int main() {
         elementos.push_back(entrada);
     }
 
-    // Crear arbol binario
     for (const auto& elem : elementos) {
         raiz = insertar(raiz, elem);
     }
 
     int opcion;
     do {
-        // Menú de opciones
         cout << "\nMenu:\n";
         cout << "0. Terminar el programa\n";
         cout << "1. Mostrar el arbol por niveles\n";
@@ -121,6 +215,8 @@ int main() {
         cout << "4. Recorrido Postorden\n";
         cout << "5. Agregar un nodo\n";
         cout << "6. Eliminar un nodo\n";
+        cout << "7. Balancear el arbol (AVL)\n";
+        cout << "8. Mostrar arbol rotado (estructura visual)\n";
         cout << "Seleccione una opcion: ";
         cin >> opcion;
 
@@ -163,6 +259,14 @@ int main() {
                 cout << "Nodo eliminado con exito (si existia).\n";
                 break;
             }
+            case 7:
+                raiz = balancearAVL(raiz);
+                cout << "Arbol balanceado usando AVL.\n";
+                break;
+            case 8:
+                cout << "\nEstructura visual del arbol rotado:\n";
+                imprimirArbol(raiz);
+                break;
             default:
                 cout << "Opcion invalida.\n";
         }
