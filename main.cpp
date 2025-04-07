@@ -59,6 +59,33 @@ void imprimirArbolPorNiveles(Nodo* raiz) {
     cout << endl;
 }
 
+// Recorrido Preorden (Raíz -> Izquierda -> Derecha)
+void preorden(Nodo* raiz) {
+    if (raiz) {
+        cout << raiz->valor << " ";
+        preorden(raiz->izquierda);
+        preorden(raiz->derecha);
+    }
+}
+
+// Recorrido Inorden (Izquierda -> Raíz -> Derecha)
+void inorden(Nodo* raiz) {
+    if (raiz) {
+        inorden(raiz->izquierda);
+        cout << raiz->valor << " ";
+        inorden(raiz->derecha);
+    }
+}
+
+// Recorrido Postorden (Izquierda -> Derecha -> Raíz)
+void postorden(Nodo* raiz) {
+    if (raiz) {
+        postorden(raiz->izquierda);
+        postorden(raiz->derecha);
+        cout << raiz->valor << " ";
+    }
+}
+
 int main() {
     vector<string> elementos;
     cout << "Ingrese 10 caracteres o numeros enteros separados por espacio: ";
@@ -79,8 +106,40 @@ int main() {
     for (const auto& elem : elementos) {
         cout << elem << " ";
     }
-    cout << "\n\nEstructura del Arbol por niveles:\n";
+    cout << "\n\nEstructura del arbol por niveles:\n";
     imprimirArbolPorNiveles(raiz);
+
+    // Limpiar el buffer de entrada
+    cin.ignore();  // Esto asegura que no haya residuos de salto de línea en el buffer
+
+    // Opción para ver el árbol con diferentes recorridos
+    int opcion;
+    cout << "\nSelecciona el tipo de recorrido para visualizar el arbol:\n";
+    cout << "1. Preorden\n";
+    cout << "2. Inorden\n";
+    cout << "3. Postorden\n";
+    cout << "Elige una opcion (1-3): ";
+    
+    // Ahora esperamos la opción para el recorrido
+    cin >> opcion;
+
+    // Imprimir el recorrido seleccionado
+    cout << "\nResultado del recorrido: ";
+    switch (opcion) {
+        case 1:
+            preorden(raiz);
+            break;
+        case 2:
+            inorden(raiz);
+            break;
+        case 3:
+            postorden(raiz);
+            break;
+        default:
+            cout << "Opcion no valida.\n";
+            break;
+    }
+    cout << endl;
 
     return 0;
 }
